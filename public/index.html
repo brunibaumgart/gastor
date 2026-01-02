@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Gastor - Gastos/Ingresos Familia</title>
+	<link rel="stylesheet" href="/styles.css" />
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+	
+
+	<header class="topbar">
+		<div class="container row">
+			<h1>Gastor</h1>
+			<div class="mode-indicator">
+				Ámbito: <span id="current-scope">-</span>
+				<button id="logout" class="link">Salir</button>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card">
+			<h2>Nuevo movimiento</h2>
+			<form id="entry-form">
+				<div class="grid">
+					<div class="field">
+						<label>Movimiento</label>
+						<select id="kind" required>
+							<option value="gasto">Gasto</option>
+							<option value="ingreso">Ingreso</option>
+						</select>
+					</div>
+					<div class="field">
+						<label>Tipo</label>
+						<select id="label" required></select>
+					</div>
+					<div class="field">
+						<label>Monto</label>
+						<input id="amount" type="text" inputmode="decimal" placeholder="0,00" required />
+					</div>
+					<div class="field">
+						<label>Moneda</label>
+						<select id="currency" required>
+							<option value="pesos">Pesos</option>
+							<option value="dolares">Dólares</option>
+						</select>
+					</div>
+					<div class="field">
+						<label>Fecha</label>
+						<input id="date" type="date" required />
+					</div>
+					<div class="field" id="due-date-field">
+						<label>Vencimiento (opcional)</label>
+						<input id="due_date" type="date" />
+					</div>
+					<div class="field">
+						<label>Fijo</label>
+						<div class="row">
+							<input id="is_fixed" type="checkbox" />
+							<select id="frequency" disabled>
+								<option value="mensual">Mensual</option>
+								<option value="semanal">Semanal</option>
+								<option value="diario">Diario</option>
+							</select>
+						</div>
+					</div>
+					
+					<div class="field field-full">
+						<label>Adicional</label>
+						<textarea id="note" rows="2" placeholder="Comentario"></textarea>
+					</div>
+				</div>
+				<div class="actions">
+					<button type="submit">Guardar</button>
+				</div>
+				<p id="form-error" class="error" role="alert" aria-live="assertive"></p>
+				<p id="form-success" class="success" role="status" aria-live="polite"></p>
+			</form>
+		</section>
+
+		<section class="card">
+			<div class="row" style="justify-content: space-between; align-items: center;">
+				<h2>Movimientos</h2>
+				<button id="filters-reset" type="button">Restablecer filtros</button>
+			</div>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th id="th-kind" class="filterable" title="Click para filtrar">Movimiento</th>
+							<th id="th-date" class="filterable" title="Click para filtrar">Fecha</th>
+							<th id="th-label" class="filterable" title="Click para filtrar">Etiqueta</th>
+							<th id="th-currency" class="filterable" title="Click para filtrar">Moneda</th>
+							<th id="th-amount" class="filterable" title="Click para filtrar">Monto</th>
+							<th id="th-fixed" class="filterable" title="Click para filtrar">Fijo</th>
+							<th id="th-frequency" class="filterable" title="Click para filtrar">Frecuencia</th>
+							<th id="th-due" class="filterable" title="Click para filtrar">Vence</th>
+							<th id="th-recorded-by" class="col-recorded-by filterable" title="Click para filtrar">Registrado por</th>
+							<th id="th-note" class="filterable" title="Click para filtrar">Nota</th>
+						</tr>
+					</thead>
+					<tbody id="entries-body">
+					</tbody>
+				</table>
+			</div>
+		</section>
+		
+		<section class="card" id="summary-card">
+			<h2>Resumen mensual</h2>
+			<div class="row" style="margin-bottom: 8px;">
+				<div class="field">
+					<label>Mes</label>
+					<select id="summary-month"></select>
+				</div>
+				<div class="field">
+					<label>Año</label>
+					<select id="summary-year"></select>
+				</div>
+				<div class="field" style="align-self: flex-end;">
+					<button id="summary-refresh">Actualizar</button>
+				</div>
+			</div>
+			<div class="grid">
+				<div class="field">
+					<label>Total Gastos</label>
+					<div id="sum-gastos">-</div>
+				</div>
+				<div class="field">
+					<label>Total Ingresos</label>
+					<div id="sum-ingresos">-</div>
+				</div>
+				<div class="field">
+					<label>Diferencia (Ingresos - Gastos)</label>
+					<div id="sum-diferencia">-</div>
+				</div>
+			</div>
+			<div class="table-wrap" style="margin-top: 12px;">
+				<h3 style="margin:8px 0;">Por etiqueta</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Etiqueta</th>
+							<th>Gastos</th>
+							<th>Ingresos</th>
+							<th>Total</th>
+						</tr>
+					</thead>
+					<tbody id="sum-by-label"></tbody>
+				</table>
+			</div>
+			<div class="table-wrap" style="margin-top: 12px;">
+				<h3 style="margin:8px 0;">Fijos vs No fijos</h3>
+				<table>
+					<thead>
+						<tr>
+							<th></th>
+							<th>Gastos</th>
+							<th>Ingresos</th>
+							<th>Total</th>
+						</tr>
+					</thead>
+					<tbody id="sum-by-fixed"></tbody>
+				</table>
+			</div>
+			<div class="table-wrap" style="margin-top: 12px;">
+				<h3 style="margin:8px 0;">Por persona (Casa)</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Persona</th>
+							<th>Gastos</th>
+							<th>Ingresos</th>
+							<th>Total</th>
+						</tr>
+					</thead>
+					<tbody id="sum-by-person"></tbody>
+				</table>
+			</div>
+		</section>
+	</main>
+
+	<script src="/app.js" type="module"></script>
+	<noscript>Se requiere JavaScript para usar la aplicación.</noscript>
+</body>
+</html>
+
+

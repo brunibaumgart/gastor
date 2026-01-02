@@ -1,0 +1,183 @@
+:root {
+	--bg: #0b0f14;
+	--card: #121821;
+	--muted: #9bb0c8;
+	--text: #e6eef8;
+	--primary: #4ea1ff;
+	--danger: #ff6b6b;
+	--success: #2dd4bf;
+	--border: #223042;
+	--focus: #7cc4ff;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+	margin: 0;
+	font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+	background: radial-gradient(1000px 1000px at 80% -20%, #112137 0%, rgba(11,15,20,0) 50%), var(--bg);
+	color: var(--text);
+}
+
+.container {
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 16px;
+}
+
+.row { display: flex; align-items: center; gap: 12px; }
+.topbar {
+	border-bottom: 1px solid var(--border);
+	background: rgba(12, 18, 28, 0.7);
+	backdrop-filter: blur(6px);
+	position: sticky;
+	top: 0; z-index: 5;
+}
+.topbar h1 { font-size: 20px; margin: 0; }
+.topbar .mode-indicator { margin-left: auto; font-size: 14px; color: var(--muted); }
+.link {
+	background: none; border: none; color: var(--primary); cursor: pointer; padding: 0; text-decoration: underline;
+}
+
+.card {
+	background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 16px;
+	margin: 16px 0;
+	box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.card h2 { margin-top: 0; font-size: 18px; }
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+}
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-full { grid-column: 1 / -1; }
+label { font-size: 13px; color: var(--muted); }
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+	background: #0e141d;
+	border: 1px solid var(--border);
+	color: var(--text);
+	padding: 10px 12px;
+	border-radius: 8px;
+	outline: none;
+}
+/* Mejor contraste para inputs de fecha e ícono en modo oscuro */
+input[type="date"] { color-scheme: dark; }
+/* Safari/Chrome (WebKit): fuerza ícono blanco con SVG embebido */
+input[type="date"]::-webkit-calendar-picker-indicator {
+	background: no-repeat center/16px 16px url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2' ry='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>");
+	opacity: 1;
+	filter: none;
+}
+/* Ocultar frecuencia por defecto; se mostrará al marcar Fijo */
+#frequency { display: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(126, 203, 255, 0.15); }
+textarea { resize: vertical; }
+
+.actions { margin-top: 12px; }
+button[type="submit"], button#keyword-submit {
+	background: var(--primary);
+	color: white;
+	border: none;
+	padding: 10px 14px;
+	border-radius: 8px;
+	cursor: pointer;
+}
+button[type="submit"]:hover, button#keyword-submit:hover { filter: brightness(1.05); }
+
+.error { color: var(--danger); }
+.success { color: var(--success); }
+.muted { color: var(--muted); }
+
+.table-wrap { overflow: auto; }
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+th, td {
+	text-align: left;
+	border-bottom: 1px solid var(--border);
+	padding: 8px 6px;
+	font-size: 14px;
+}
+th { color: var(--muted); font-weight: 600; }
+th.filterable { cursor: pointer; position: relative; }
+th.filterable::after {
+	content: "";
+	display: inline-block;
+	width: 12px; height: 12px;
+	margin-left: 6px;
+	background: no-repeat center/12px 12px url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239bb0c8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polygon points='3 4 21 4 14 12 14 20 10 18 10 12 3 4'/></svg>");
+	opacity: 0.6;
+	vertical-align: text-bottom;
+}
+th.filtered { color: var(--primary); position: relative; }
+th.filtered::after {
+	content: "";
+	display: inline-block;
+	width: 12px; height: 12px;
+	margin-left: 6px;
+	background: no-repeat center/12px 12px url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234ea1ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polygon points='3 4 21 4 14 12 14 20 10 18 10 12 3 4'/></svg>");
+	opacity: 0.9;
+	vertical-align: text-bottom;
+}
+
+/* Popover de filtros estilo Excel */
+.filter-popover {
+	position: absolute;
+	z-index: 20;
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 12px;
+	min-width: 240px;
+	max-width: 320px;
+	box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+.filter-popover h4 {
+	margin: 0 0 8px 0;
+	font-size: 14px;
+	color: var(--muted);
+}
+.filter-popover .group { margin-bottom: 8px; }
+.filter-popover .options { max-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+.filter-popover .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.filter-popover .inline { display: flex; gap: 8px; }
+.filter-popover label { font-size: 12px; color: var(--muted); }
+.filter-popover input[type="text"] { width: 100%; }
+
+
+.overlay {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	background: rgba(9, 13, 20, 0.7);
+	backdrop-filter: blur(3px);
+}
+.overlay-card {
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 20px;
+	min-width: 320px;
+	max-width: 90vw;
+}
+.overlay-card h2 { margin-top: 0; }
+.overlay-card input[type="password"] {
+	width: 100%;
+	margin: 8px 0;
+}
+.overlay-card .hint { font-size: 12px; color: var(--muted); }
+
+@media (max-width: 800px) {
+	.grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+

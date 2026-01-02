@@ -1,0 +1,29 @@
+{
+  "name": "gastor",
+  "version": "1.0.0",
+  "description": "App familiar para llevar gastos/ingresos de casa y del registro",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "generate-secret": "node generate-secret.js"
+  },
+  "keywords": [
+    "gastos",
+    "ingresos",
+    "familia",
+    "registro",
+    "casa",
+    "sqlite",
+    "express"
+  ],
+  "author": "Familia",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7",
+    "bcryptjs": "^2.4.3",
+    "express-session": "^1.17.3"
+  }
+}
+
