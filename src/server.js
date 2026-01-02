@@ -2,22 +2,48 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import {
-	initializeDatabase,
-	listLabels,
-	listEntriesByScope,
-	insertEntry,
-	findUserByUsername,
-	deleteEntry
-} from './db.js';
 import session from 'express-session';
 import bcrypt from 'bcryptjs';
+
+// Intentar usar PostgreSQL primero, si no está disponible usar SQLite
+let dbModule;
+let db;
+
+// Función para inicializar la base de datos
+async function initDatabase() {
+	try {
+		// Intentar cargar PostgreSQL
+		const postgresModule = await import('./db-postgres.js');
+		const postgresDb = postgresModule.initializeDatabase();
+		
+		if (postgresDb) {
+			// PostgreSQL está disponible
+			dbModule = postgresModule;
+			db = postgresDb;
+			console.log('✅ Usando PostgreSQL');
+			return;
+		}
+	} catch (err) {
+		console.log('PostgreSQL no disponible:', err.message);
+	}
+	
+	// Si PostgreSQL no está disponible, usar SQLite
+	const sqliteModule = await import('./db.js');
+	dbModule = sqliteModule;
+	db = sqliteModule.initializeDatabase();
+	console.log('✅ Usando SQLite');
+}
+
+// Inicializar base de datos (se resuelve antes de que el servidor escuche)
+await initDatabase();
+
+const { listLabels, listEntriesByScope, insertEntry, findUserByUsername, deleteEntry } = dbModule;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const db = initializeDatabase();
+// db ya está inicializado arriba
 
 // Basic config
 const PORT = process.env.PORT || 3000;
@@ -258,7 +284,7 @@ app.delete('/api/entries/:id', requireAuth, async (req, res) => {
 });
 
 // Backup de base de datos (solo para usuario bruno)
-app.get('/api/backup', requireAuth, (req, res) => {
+app.get('/api/backup', requireAuth, async (req, res) => {
 	try {
 		const username = req.session.user.username;
 		
@@ -267,6 +293,15 @@ app.get('/api/backup', requireAuth, (req, res) => {
 			return res.status(403).json({ error: 'No tienes permiso para descargar backups' });
 		}
 		
+		// Si está usando PostgreSQL, informar que no se puede hacer backup de archivo
+		if (process.env.DATABASE_URL) {
+			return res.json({ 
+				message: 'Estás usando PostgreSQL. Los datos están seguros en la base de datos gestionada.',
+				info: 'No necesitas hacer backup de archivo cuando usas PostgreSQL - los datos persisten automáticamente entre deployments.'
+			});
+		}
+		
+		// Backup de SQLite
 		const dbPath = path.join(__dirname, '..', 'data', 'gastor.db');
 		
 		// Verificar que el archivo existe
@@ -299,8 +334,7 @@ app.get('/api/backup', requireAuth, (req, res) => {
 	}
 });
 
-// Backup de base de datos (solo para usuario bruno)
-app.get('/api/backup', requireAuth, (req, res) => {
+// Monthly summary
 	try {
 		const username = req.session.user.username;
 		
