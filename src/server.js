@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import {
 	initializeDatabase,
 	listLabels,
@@ -253,6 +254,90 @@ app.delete('/api/entries/:id', requireAuth, async (req, res) => {
 	} catch (err) {
 		console.error('Error eliminando entrada:', err);
 		res.status(500).json({ error: 'Error eliminando movimiento' });
+	}
+});
+
+// Backup de base de datos (solo para usuario bruno)
+app.get('/api/backup', requireAuth, (req, res) => {
+	try {
+		const username = req.session.user.username;
+		
+		// Solo el usuario "bruno" puede descargar backups
+		if (username !== 'bruno') {
+			return res.status(403).json({ error: 'No tienes permiso para descargar backups' });
+		}
+		
+		const dbPath = path.join(__dirname, '..', 'data', 'gastor.db');
+		
+		// Verificar que el archivo existe
+		if (!fs.existsSync(dbPath)) {
+			return res.status(404).json({ error: 'Base de datos no encontrada' });
+		}
+		
+		// Generar nombre de archivo con timestamp
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+		const filename = `gastor-backup-${timestamp}.db`;
+		
+		// Enviar archivo
+		res.setHeader('Content-Type', 'application/octet-stream');
+		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+		
+		const fileStream = fs.createReadStream(dbPath);
+		fileStream.pipe(res);
+		
+		fileStream.on('error', (err) => {
+			console.error('Error leyendo archivo de backup:', err);
+			if (!res.headersSent) {
+				res.status(500).json({ error: 'Error leyendo archivo de backup' });
+			}
+		});
+		
+		console.log(`Backup descargado por usuario ${username} - ${filename}`);
+	} catch (err) {
+		console.error('Error en backup:', err);
+		res.status(500).json({ error: 'Error generando backup' });
+	}
+});
+
+// Backup de base de datos (solo para usuario bruno)
+app.get('/api/backup', requireAuth, (req, res) => {
+	try {
+		const username = req.session.user.username;
+		
+		// Solo el usuario "bruno" puede descargar backups
+		if (username !== 'bruno') {
+			return res.status(403).json({ error: 'No tienes permiso para descargar backups' });
+		}
+		
+		const dbPath = path.join(__dirname, '..', 'data', 'gastor.db');
+		
+		// Verificar que el archivo existe
+		if (!fs.existsSync(dbPath)) {
+			return res.status(404).json({ error: 'Base de datos no encontrada' });
+		}
+		
+		// Generar nombre de archivo con timestamp
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+		const filename = `gastor-backup-${timestamp}.db`;
+		
+		// Enviar archivo
+		res.setHeader('Content-Type', 'application/octet-stream');
+		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+		
+		const fileStream = fs.createReadStream(dbPath);
+		fileStream.pipe(res);
+		
+		fileStream.on('error', (err) => {
+			console.error('Error leyendo archivo de backup:', err);
+			if (!res.headersSent) {
+				res.status(500).json({ error: 'Error leyendo archivo de backup' });
+			}
+		});
+		
+		console.log(`Backup descargado por usuario ${username} - ${filename}`);
+	} catch (err) {
+		console.error('Error en backup:', err);
+		res.status(500).json({ error: 'Error generando backup' });
 	}
 });
 
