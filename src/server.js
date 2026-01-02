@@ -41,6 +41,9 @@ const VALID = {
 	people: ['Lucia', 'Bruno', 'Jorge', 'Gabriela']
 };
 
+// Trust proxy (necesario para Render y otros servicios detrás de proxy)
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -51,6 +54,7 @@ app.use(
 		cookie: {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production', // HTTPS en producción
+			sameSite: 'lax', // Mejora compatibilidad con proxies
 			maxAge: 1000 * 60 * 60 * 8 // 8h
 		}
 	})
@@ -73,13 +77,37 @@ app.post('/api/login', async (req, res) => {
 	try {
 		const usernameInput = String((req.body?.username || '')).trim().toLowerCase();
 		const passwordInput = String(req.body?.password || '');
+		
+		if (!usernameInput || !passwordInput) {
+			return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+		}
+		
 		const user = await findUserByUsername(db, usernameInput);
-		if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
+		if (!user) {
+			console.log(`Login fallido: usuario no encontrado - ${usernameInput}`);
+			return res.status(401).json({ error: 'Credenciales inválidas' });
+		}
+		
 		const ok = await bcrypt.compare(passwordInput, user.password_hash);
-		if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
+		if (!ok) {
+			console.log(`Login fallido: contraseña incorrecta para usuario - ${usernameInput}`);
+			return res.status(401).json({ error: 'Credenciales inválidas' });
+		}
+		
+		// Guardar sesión
 		req.session.user = { id: user.id, username: user.username, scope: user.scope };
-		res.json({ ok: true });
-	} catch (_err) {
+		
+		// Guardar sesión explícitamente
+		req.session.save((err) => {
+			if (err) {
+				console.error('Error guardando sesión:', err);
+				return res.status(500).json({ error: 'Error guardando sesión' });
+			}
+			console.log(`Login exitoso: ${usernameInput} (scope: ${user.scope})`);
+			res.json({ ok: true });
+		});
+	} catch (err) {
+		console.error('Error en login:', err);
 		res.status(500).json({ error: 'Error de inicio de sesión' });
 	}
 });

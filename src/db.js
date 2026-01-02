@@ -127,11 +127,19 @@ export function initializeDatabase() {
 				{ username: 'jorge', scope: 'casa', password: 'gallardo1956' },
 				{ username: 'registro', scope: 'registro', password: 'gallardo1956' }
 			];
+			console.log('Creando usuarios por defecto...');
 			for (const u of hardcoded) {
 				const hash = bcrypt.hashSync(String(u.password), 10);
 				db.run(
 					'INSERT INTO users (username, scope, password_hash) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET scope=excluded.scope, password_hash=excluded.password_hash',
-					[String(u.username).toLowerCase(), String(u.scope).toLowerCase(), hash]
+					[String(u.username).toLowerCase(), String(u.scope).toLowerCase(), hash],
+					function(err) {
+						if (err) {
+							console.error(`Error creando usuario ${u.username}:`, err);
+						} else {
+							console.log(`Usuario ${u.username} creado/actualizado (scope: ${u.scope})`);
+						}
+					}
 				);
 			}
 		}
