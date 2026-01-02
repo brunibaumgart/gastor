@@ -6,7 +6,8 @@ import {
 	listLabels,
 	listEntriesByScope,
 	insertEntry,
-	findUserByUsername
+	findUserByUsername,
+	deleteEntry
 } from './db.js';
 import session from 'express-session';
 import bcrypt from 'bcryptjs';
@@ -224,6 +225,34 @@ app.post('/api/entries', requireAuth, async (req, res) => {
 		res.status(201).json({ id: result.id });
 	} catch (_err) {
 		res.status(500).json({ error: 'Error creando movimiento' });
+	}
+});
+
+// Delete entry (solo para usuario bruno)
+app.delete('/api/entries/:id', requireAuth, async (req, res) => {
+	try {
+		const username = req.session.user.username;
+		
+		// Solo el usuario "bruno" puede eliminar entradas
+		if (username !== 'bruno') {
+			return res.status(403).json({ error: 'No tienes permiso para eliminar entradas' });
+		}
+		
+		const entryId = Number(req.params.id);
+		if (!Number.isInteger(entryId) || entryId <= 0) {
+			return res.status(400).json({ error: 'ID de entrada inválido' });
+		}
+		
+		const result = await deleteEntry(db, entryId);
+		if (!result.deleted) {
+			return res.status(404).json({ error: 'Entrada no encontrada' });
+		}
+		
+		console.log(`Entrada ${entryId} eliminada por usuario ${username}`);
+		res.json({ ok: true, deleted: true });
+	} catch (err) {
+		console.error('Error eliminando entrada:', err);
+		res.status(500).json({ error: 'Error eliminando movimiento' });
 	}
 });
 

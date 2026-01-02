@@ -98,6 +98,29 @@ table {
 	width: 100%;
 	border-collapse: collapse;
 }
+
+.btn-delete {
+	background: var(--danger);
+	color: white;
+	border: none;
+	padding: 4px 8px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: filter 0.2s;
+}
+
+.btn-delete:hover {
+	filter: brightness(1.1);
+}
+
+.btn-delete:active {
+	filter: brightness(0.9);
+}
+
+.col-delete {
+	text-align: center;
+}
 th, td {
 	text-align: left;
 	border-bottom: 1px solid var(--border);

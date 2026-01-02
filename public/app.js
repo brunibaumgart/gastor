@@ -1,6 +1,7 @@
 const state = {
 	config: null,
 	scope: null,
+	username: null, // Usuario actual
 	entries: [],
 	filters: {
 		kind: [],
@@ -303,6 +304,12 @@ function updateScopeUI() {
 	} else {
 		recordedHeaderCells.forEach(el => (el.style.display = 'none'));
 	}
+	// Mostrar/ocultar columna de eliminar (solo para bruno)
+	const deleteHeaderCells = document.querySelectorAll('.col-delete');
+	const isBruno = state.username === 'bruno';
+	deleteHeaderCells.forEach(el => {
+		el.style.display = isBruno ? '' : 'none';
+	});
 }
 
 function toTitleCaseWords(name) {
@@ -379,9 +386,14 @@ function sanitizeAmountInput(value) {
 function renderEntries(list) {
 	const tbody = qs('entries-body');
 	tbody.innerHTML = '';
+	const isBruno = state.username === 'bruno';
+	
 	for (const e of list) {
 		const tr = document.createElement('tr');
 		const isFixed = e.is_fixed ? 'Sí' : 'No';
+		const deleteButton = isBruno 
+			? `<td class="col-delete"><button class="btn-delete" data-id="${e.id}" title="Eliminar entrada">🗑️</button></td>`
+			: '';
 		tr.innerHTML = `
 			<td>${e.kind === 'ingreso' ? 'Ingreso' : 'Gasto'}</td>
 			<td>${e.date || ''}</td>
@@ -393,11 +405,27 @@ function renderEntries(list) {
 			<td>${e.due_date || ''}</td>
 			<td class="col-recorded-by">${e.recorded_by || ''}</td>
 			<td>${e.note ? e.note : ''}</td>
+			${deleteButton}
 		`;
 		if (state.scope !== 'casa') {
 			const cell = tr.querySelector('.col-recorded-by');
 			if (cell) cell.style.display = 'none';
 		}
+		
+		// Ocultar columna de eliminar si no es bruno
+		if (!isBruno) {
+			const deleteCell = tr.querySelector('.col-delete');
+			if (deleteCell) deleteCell.style.display = 'none';
+		}
+		
+		// Agregar listener al botón de eliminar
+		if (isBruno) {
+			const deleteBtn = tr.querySelector('.btn-delete');
+			if (deleteBtn) {
+				deleteBtn.addEventListener('click', () => handleDeleteEntry(e.id));
+			}
+		}
+		
 		tbody.appendChild(tr);
 	}
 }
@@ -514,6 +542,29 @@ async function loadEntries() {
 	const { entries } = await res.json();
 	state.entries = entries || [];
 	applyFiltersAndRender();
+}
+
+async function handleDeleteEntry(entryId) {
+	if (!confirm('¿Estás seguro de que quieres eliminar esta entrada? Esta acción no se puede deshacer.')) {
+		return;
+	}
+	
+	try {
+		const res = await fetch(`/api/entries/${entryId}`, {
+			method: 'DELETE'
+		});
+		
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			throw new Error(err.error || 'Error eliminando entrada');
+		}
+		
+		// Recargar entradas después de eliminar
+		await loadEntries();
+		await loadSummary(); // Recargar resumen también
+	} catch (e) {
+		alert('Error al eliminar: ' + e.message);
+	}
 }
 
 function getFormData() {
@@ -657,6 +708,7 @@ function setupEvents() {
 			const me = await fetchMe();
 			if (!me.authenticated) throw new Error('No autenticado');
 			state.scope = me.user.scope;
+			state.username = me.user.username; // Guardar username
 			showOverlay(false);
 			updateScopeUI();
 			await loadLabels();
@@ -686,6 +738,7 @@ async function boot() {
 		return;
 	}
 	state.scope = me.user.scope;
+	state.username = me.user.username; // Guardar username
 	updateScopeUI();
 	await loadLabels();
 	await loadEntries();

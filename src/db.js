@@ -225,4 +225,13 @@ export function insertEntry(db, entry) {
 	});
 }
 
+export function deleteEntry(db, entryId) {
+	return new Promise((resolve, reject) => {
+		db.run('DELETE FROM entries WHERE id = ?', [entryId], function (err) {
+			if (err) return reject(err);
+			resolve({ deleted: this.changes > 0 });
+		});
+	});
+}
+
 
